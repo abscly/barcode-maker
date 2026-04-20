@@ -79,7 +79,7 @@
             keypad.innerHTML = html;
         }
 
-        function updateDisplay() {
+        function updateDisplay(preventAutoForward = false) {
             const display = document.getElementById('display');
             const formatted = currentInput.match(/.{1,4}/g).join('-');
             
@@ -92,7 +92,7 @@
             }
 
             // 26桁になったら自動でバーコード生成画面へ
-            if (currentInput.length === 26) {
+            if (currentInput.length === 26 && !preventAutoForward) {
                 showResultArea();
             }
         }
@@ -123,7 +123,7 @@
             document.getElementById('keypad').style.display = "grid";
             document.getElementById('controls').style.display = "block";
             document.getElementById('result-area').style.display = "none";
-            updateDisplay();
+            updateDisplay(true);
         }
 
         // 結果画面を表示
