@@ -9,7 +9,7 @@
         body { font-family: sans-serif; margin: 0; padding: 10px; background-color: #f4f4f9; text-align: center; touch-action: manipulation; }
         h1 { font-size: 20px; color: #333; margin: 10px 0 15px; }
         #display { font-size: 24px; font-weight: bold; background: #fff; padding: 15px; margin: 10px 0 20px; border-radius: 8px; border: 2px solid #ccc; min-height: 30px; letter-spacing: 2px; }
-        .fixed-part { color: #888; } /* 固定部分の色を少し薄くして見分けやすくする */
+        .fixed-part { color: #888; }
         .keypad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; max-width: 400px; margin: 0 auto; }
         .key { background: #fff; border: 2px solid #ddd; border-radius: 12px; font-size: 32px; font-weight: bold; padding: 20px 0; color: #333; cursor: pointer; box-shadow: 0 4px 0 #ccc; user-select: none; }
         .key:active { transform: translateY(4px); box-shadow: none; }
@@ -18,8 +18,8 @@
         #result-area { display: none; margin-top: 20px; }
         .share-btn { padding: 15px; font-size: 20px; font-weight: bold; background: #28a745; color: white; border: none; border-radius: 8px; width: 100%; max-width: 400px; cursor: pointer; margin-top: 15px; box-shadow: 0 4px 0 #1e7e34; }
         .share-btn:active { transform: translateY(4px); box-shadow: none; }
-        .reset-btn { padding: 15px; font-size: 18px; font-weight: bold; background: #6c757d; color: white; border: none; border-radius: 8px; width: 100%; max-width: 400px; cursor: pointer; margin-top: 10px; box-shadow: 0 4px 0 #5a6268; }
-        .reset-btn:active { transform: translateY(4px); box-shadow: none; }
+        .edit-btn { padding: 15px; font-size: 18px; font-weight: bold; background: #007bff; color: white; border: none; border-radius: 8px; width: 100%; max-width: 400px; cursor: pointer; margin-top: 10px; box-shadow: 0 4px 0 #0056b3; }
+        .edit-btn:active { transform: translateY(4px); box-shadow: none; }
     </style>
 </head>
 <body>
@@ -46,33 +46,28 @@
     <div id="result-area">
         <canvas id="barcodeCanvas"></canvas>
         <button class="share-btn" onclick="shareImage()">画像にしてLINEなどで送る</button>
-        <button class="reset-btn" onclick="clearAll()">もう一度入力する</button>
+        <button class="edit-btn" onclick="backToInput()">修正する（入力画面に戻る）</button>
     </div>
 
     <script>
-        // 最初の8桁はファミペイの固定番号として初期設定
         const FIXED_PREFIX = "80280000";
         let currentInput = FIXED_PREFIX;
 
         function updateDisplay() {
             const display = document.getElementById('display');
-            // 4桁ごとにハイフンを入れて見やすくする
             const formatted = currentInput.match(/.{1,4}/g).join('-');
             
-            // 最初の8桁（固定部分）と、入力部分で色を分ける工夫
             if (currentInput.length > 8) {
-                const fixedPart = formatted.substring(0, 9); // "8028-0000"
+                const fixedPart = formatted.substring(0, 9);
                 const inputPart = formatted.substring(9);
                 display.innerHTML = `<span class="fixed-part">${fixedPart}-</span>${inputPart} (${currentInput.length}/26)`;
             } else {
                 display.innerHTML = `<span class="fixed-part">${formatted}-</span> (${currentInput.length}/26)`;
             }
 
-            // 26桁になったらバーコードを生成
+            // 26桁になったら自動でバーコード生成画面へ
             if (currentInput.length === 26) {
-                document.getElementById('keypad').style.display = "none";
-                document.getElementById('result-area').style.display = "block";
-                generateBarcode();
+                showResultArea();
             }
         }
 
@@ -84,7 +79,6 @@
         }
 
         function backspace() {
-            // 最初の8桁（80280000）は消せないように制限
             if (currentInput.length > 8) {
                 currentInput = currentInput.slice(0, -1);
                 updateDisplay();
@@ -92,11 +86,24 @@
         }
 
         function clearAll() {
-            // クリア時も最初の8桁に戻すだけにする
-            currentInput = FIXED_PREFIX;
+            if(confirm("入力をすべて消去して最初に戻りますか？")) {
+                currentInput = FIXED_PREFIX;
+                backToInput();
+            }
+        }
+
+        // 入力画面に戻る（数字は保持）
+        function backToInput() {
             document.getElementById('keypad').style.display = "grid";
             document.getElementById('result-area').style.display = "none";
             updateDisplay();
+        }
+
+        // 結果画面を表示
+        function showResultArea() {
+            document.getElementById('keypad').style.display = "none";
+            document.getElementById('result-area').style.display = "block";
+            generateBarcode();
         }
 
         function generateBarcode() {
@@ -125,7 +132,6 @@
             });
         }
 
-        // ページ読み込み時に最初の表示をセット
         window.onload = updateDisplay;
     </script>
 </body>
