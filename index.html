@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ファミペイバーコードメーカー</title>
+    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+    <style>
+        body { font-family: sans-serif; margin: 0; padding: 10px; background-color: #f4f4f9; text-align: center; touch-action: manipulation; }
+        h1 { font-size: 20px; color: #333; margin: 10px 0 15px; }
+        #display { font-size: 24px; font-weight: bold; background: #fff; padding: 15px; margin: 10px 0 20px; border-radius: 8px; border: 2px solid #ccc; min-height: 30px; letter-spacing: 2px; }
+        .fixed-part { color: #888; } /* 固定部分の色を少し薄くして見分けやすくする */
+        .keypad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; max-width: 400px; margin: 0 auto; }
+        .key { background: #fff; border: 2px solid #ddd; border-radius: 12px; font-size: 32px; font-weight: bold; padding: 20px 0; color: #333; cursor: pointer; box-shadow: 0 4px 0 #ccc; user-select: none; }
+        .key:active { transform: translateY(4px); box-shadow: none; }
+        .key.clear { background: #ff4d4d; color: white; border-color: #cc0000; box-shadow: 0 4px 0 #cc0000; font-size: 20px; }
+        .key.back { background: #ffa500; color: white; border-color: #cc8400; box-shadow: 0 4px 0 #cc8400; font-size: 20px; }
+        #result-area { display: none; margin-top: 20px; }
+        .share-btn { padding: 15px; font-size: 20px; font-weight: bold; background: #28a745; color: white; border: none; border-radius: 8px; width: 100%; max-width: 400px; cursor: pointer; margin-top: 15px; box-shadow: 0 4px 0 #1e7e34; }
+        .share-btn:active { transform: translateY(4px); box-shadow: none; }
+        .reset-btn { padding: 15px; font-size: 18px; font-weight: bold; background: #6c757d; color: white; border: none; border-radius: 8px; width: 100%; max-width: 400px; cursor: pointer; margin-top: 10px; box-shadow: 0 4px 0 #5a6268; }
+        .reset-btn:active { transform: translateY(4px); box-shadow: none; }
+    </style>
+</head>
+<body>
+
+    <h1>ファミペイバーコードメーカー</h1>
+
+    <div id="display">8028-0000- (8/26)</div>
+
+    <div class="keypad" id="keypad">
+        <div class="key" onclick="inputNum('1')">1</div>
+        <div class="key" onclick="inputNum('2')">2</div>
+        <div class="key" onclick="inputNum('3')">3</div>
+        <div class="key" onclick="inputNum('4')">4</div>
+        <div class="key" onclick="inputNum('5')">5</div>
+        <div class="key" onclick="inputNum('6')">6</div>
+        <div class="key" onclick="inputNum('7')">7</div>
+        <div class="key" onclick="inputNum('8')">8</div>
+        <div class="key" onclick="inputNum('9')">9</div>
+        <div class="key clear" onclick="clearAll()">全消し</div>
+        <div class="key" onclick="inputNum('0')">0</div>
+        <div class="key back" onclick="backspace()">1文字<br>削除</div>
+    </div>
+
+    <div id="result-area">
+        <canvas id="barcodeCanvas"></canvas>
+        <button class="share-btn" onclick="shareImage()">画像にしてLINEなどで送る</button>
+        <button class="reset-btn" onclick="clearAll()">もう一度入力する</button>
+    </div>
+
+    <script>
+        // 最初の8桁はファミペイの固定番号として初期設定
+        const FIXED_PREFIX = "80280000";
+        let currentInput = FIXED_PREFIX;
+
+        function updateDisplay() {
+            const display = document.getElementById('display');
+            // 4桁ごとにハイフンを入れて見やすくする
+            const formatted = currentInput.match(/.{1,4}/g).join('-');
+            
+            // 最初の8桁（固定部分）と、入力部分で色を分ける工夫
+            if (currentInput.length > 8) {
+                const fixedPart = formatted.substring(0, 9); // "8028-0000"
+                const inputPart = formatted.substring(9);
+                display.innerHTML = `<span class="fixed-part">${fixedPart}-</span>${inputPart} (${currentInput.length}/26)`;
+            } else {
+                display.innerHTML = `<span class="fixed-part">${formatted}-</span> (${currentInput.length}/26)`;
+            }
+
+            // 26桁になったらバーコードを生成
+            if (currentInput.length === 26) {
+                document.getElementById('keypad').style.display = "none";
+                document.getElementById('result-area').style.display = "block";
+                generateBarcode();
+            }
+        }
+
+        function inputNum(num) {
+            if (currentInput.length < 26) {
+                currentInput += num;
+                updateDisplay();
+            }
+        }
+
+        function backspace() {
+            // 最初の8桁（80280000）は消せないように制限
+            if (currentInput.length > 8) {
+                currentInput = currentInput.slice(0, -1);
+                updateDisplay();
+            }
+        }
+
+        function clearAll() {
+            // クリア時も最初の8桁に戻すだけにする
+            currentInput = FIXED_PREFIX;
+            document.getElementById('keypad').style.display = "grid";
+            document.getElementById('result-area').style.display = "none";
+            updateDisplay();
+        }
+
+        function generateBarcode() {
+            const canvas = document.getElementById('barcodeCanvas');
+            JsBarcode(canvas, currentInput, {
+                format: "CODE128",
+                width: 2,
+                height: 100,
+                displayValue: true,
+                margin: 10,
+                background: "#ffffff"
+            });
+        }
+
+        async function shareImage() {
+            const canvas = document.getElementById('barcodeCanvas');
+            canvas.toBlob(async (blob) => {
+                const file = new File([blob], "barcode.png", { type: "image/png" });
+                if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                    try {
+                        await navigator.share({ files: [file], title: 'ファミペイバーコード' });
+                    } catch (err) { console.log('共有キャンセル'); }
+                } else {
+                    alert("画像を長押しして保存してください。");
+                }
+            });
+        }
+
+        // ページ読み込み時に最初の表示をセット
+        window.onload = updateDisplay;
+    </script>
+</body>
+</html>
