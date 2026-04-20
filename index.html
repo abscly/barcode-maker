@@ -11,7 +11,7 @@
     <style>
         body { font-family: sans-serif; margin: 0; padding: 10px; background-color: #f4f4f9; text-align: center; touch-action: manipulation; }
         h1 { font-size: 20px; color: #333; margin: 10px 0 15px; }
-        #display { font-size: 24px; font-weight: bold; background: #fff; padding: 15px; margin: 10px 0 20px; border-radius: 8px; border: 2px solid #ccc; min-height: 30px; letter-spacing: 2px; }
+        #display { font-size: 24px; font-weight: bold; background: #fff; padding: 15px; margin: 10px 0 10px; border-radius: 8px; border: 2px solid #ccc; min-height: 30px; letter-spacing: 2px; }
         .fixed-part { color: #888; }
         .keypad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; max-width: 400px; margin: 0 auto; }
         .key { background: #fff; border: 2px solid #ddd; border-radius: 12px; font-size: 32px; font-weight: bold; padding: 20px 0; color: #333; cursor: pointer; box-shadow: 0 4px 0 #ccc; user-select: none; }
@@ -23,6 +23,9 @@
         .share-btn:active { transform: translateY(4px); box-shadow: none; }
         .edit-btn { padding: 15px; font-size: 18px; font-weight: bold; background: #007bff; color: white; border: none; border-radius: 8px; width: 100%; max-width: 400px; cursor: pointer; margin-top: 10px; box-shadow: 0 4px 0 #0056b3; }
         .edit-btn:active { transform: translateY(4px); box-shadow: none; }
+        .controls { max-width: 400px; margin: 0 auto 10px; text-align: right; }
+        #toggleLayoutBtn { padding: 6px 12px; font-size: 14px; font-weight: bold; border: 1px solid #ccc; border-radius: 6px; background: #fff; cursor: pointer; color: #555; box-shadow: 0 2px 0 #ddd; letter-spacing: 1px; }
+        #toggleLayoutBtn:active { transform: translateY(2px); box-shadow: none; }
     </style>
 </head>
 <body>
@@ -30,20 +33,13 @@
     <h1>ファミペイバーコードメーカー</h1>
 
     <div id="display">8028-0000- (8/26)</div>
+    
+    <div class="controls" id="controls">
+        <button id="toggleLayoutBtn" onclick="toggleLayout()">📱 配列: 電話</button>
+    </div>
 
     <div class="keypad" id="keypad">
-        <div class="key" onclick="inputNum('1')">1</div>
-        <div class="key" onclick="inputNum('2')">2</div>
-        <div class="key" onclick="inputNum('3')">3</div>
-        <div class="key" onclick="inputNum('4')">4</div>
-        <div class="key" onclick="inputNum('5')">5</div>
-        <div class="key" onclick="inputNum('6')">6</div>
-        <div class="key" onclick="inputNum('7')">7</div>
-        <div class="key" onclick="inputNum('8')">8</div>
-        <div class="key" onclick="inputNum('9')">9</div>
-        <div class="key clear" onclick="clearAll()">全消し</div>
-        <div class="key" onclick="inputNum('0')">0</div>
-        <div class="key back" onclick="backspace()">1文字<br>削除</div>
+        <!-- JSで描画 -->
     </div>
 
     <div id="result-area">
@@ -55,6 +51,33 @@
     <script>
         const FIXED_PREFIX = "80280000";
         let currentInput = FIXED_PREFIX;
+        let isCalculatorLayout = false; // false = 電話, true = 電卓
+
+        function toggleLayout() {
+            isCalculatorLayout = !isCalculatorLayout;
+            const btn = document.getElementById('toggleLayoutBtn');
+            btn.innerHTML = isCalculatorLayout ? "🧮 配列: 電卓" : "📱 配列: 電話";
+            renderKeypad();
+        }
+
+        function renderKeypad() {
+            const keypad = document.getElementById('keypad');
+            const layout = isCalculatorLayout 
+                ? [7, 8, 9, 4, 5, 6, 1, 2, 3, 'clear', 0, 'back']
+                : [1, 2, 3, 4, 5, 6, 7, 8, 9, 'clear', 0, 'back'];
+            
+            let html = '';
+            for(let key of layout) {
+                if(key === 'clear') {
+                    html += `<div class="key clear" onclick="clearAll()">全消し</div>`;
+                } else if(key === 'back') {
+                    html += `<div class="key back" onclick="backspace()">1文字<br>削除</div>`;
+                } else {
+                    html += `<div class="key" onclick="inputNum('${key}')">${key}</div>`;
+                }
+            }
+            keypad.innerHTML = html;
+        }
 
         function updateDisplay() {
             const display = document.getElementById('display');
@@ -91,13 +114,14 @@
         function clearAll() {
             if(confirm("入力をすべて消去して最初に戻りますか？")) {
                 currentInput = FIXED_PREFIX;
-                backToInput();
+                updateDisplay();
             }
         }
 
         // 入力画面に戻る（数字は保持）
         function backToInput() {
             document.getElementById('keypad').style.display = "grid";
+            document.getElementById('controls').style.display = "block";
             document.getElementById('result-area').style.display = "none";
             updateDisplay();
         }
@@ -105,6 +129,7 @@
         // 結果画面を表示
         function showResultArea() {
             document.getElementById('keypad').style.display = "none";
+            document.getElementById('controls').style.display = "none";
             document.getElementById('result-area').style.display = "block";
             generateBarcode();
         }
@@ -135,7 +160,10 @@
             });
         }
 
-        window.onload = updateDisplay;
+        window.onload = () => {
+            renderKeypad();
+            updateDisplay();
+        };
     </script>
 </body>
 </html>
