@@ -2,50 +2,173 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate, max-age=0">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
     <title>ファミペイバーコードメーカー</title>
     <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
     <style>
-        body { font-family: sans-serif; margin: 0; padding: 10px; background-color: #f4f4f9; text-align: center; touch-action: manipulation; }
-        h1 { font-size: 20px; color: #333; margin: 10px 0 15px; }
-        #display { font-size: 24px; font-weight: bold; background: #fff; padding: 15px; margin: 10px 0 10px; border-radius: 8px; border: 2px solid #ccc; min-height: 30px; letter-spacing: 2px; }
-        .fixed-part { color: #888; }
-        .keypad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; max-width: 400px; margin: 0 auto; }
-        .key { background: #fff; border: 2px solid #ddd; border-radius: 12px; font-size: 32px; font-weight: bold; padding: 20px 0; color: #333; cursor: pointer; box-shadow: 0 4px 0 #ccc; user-select: none; }
-        .key:active { transform: translateY(4px); box-shadow: none; }
-        .key.clear { background: #ff4d4d; color: white; border-color: #cc0000; box-shadow: 0 4px 0 #cc0000; font-size: 20px; }
-        .key.back { background: #ffa500; color: white; border-color: #cc8400; box-shadow: 0 4px 0 #cc8400; font-size: 20px; }
-        #result-area { display: none; margin-top: 20px; }
-        .share-btn { padding: 15px; font-size: 20px; font-weight: bold; background: #28a745; color: white; border: none; border-radius: 8px; width: 100%; max-width: 400px; cursor: pointer; margin-top: 15px; box-shadow: 0 4px 0 #1e7e34; }
-        .share-btn:active { transform: translateY(4px); box-shadow: none; }
-        .edit-btn { padding: 15px; font-size: 18px; font-weight: bold; background: #007bff; color: white; border: none; border-radius: 8px; width: 100%; max-width: 400px; cursor: pointer; margin-top: 10px; box-shadow: 0 4px 0 #0056b3; }
-        .edit-btn:active { transform: translateY(4px); box-shadow: none; }
-        .controls { max-width: 400px; margin: 0 auto 10px; text-align: right; }
-        #toggleLayoutBtn { padding: 6px 12px; font-size: 14px; font-weight: bold; border: 1px solid #ccc; border-radius: 6px; background: #fff; cursor: pointer; color: #555; box-shadow: 0 2px 0 #ddd; letter-spacing: 1px; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            margin: 0;
+            padding: 0 0 30px 0;
+            background-color: #f2f5f7;
+            text-align: center;
+            touch-action: manipulation;
+            color: #333;
+            -webkit-font-smoothing: antialiased;
+        }
+        .header {
+            background: #fff;
+            padding: 16px 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+            margin-bottom: 24px;
+            position: relative;
+        }
+        .header::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            /* ファミマの緑と青のストライプ */
+            background: linear-gradient(90deg, #009944 0%, #009944 50%, #005EAD 50%, #005EAD 100%);
+        }
+        h1 { font-size: 20px; color: #222; margin: 0; font-weight: 800; letter-spacing: 0.5px; }
+        
+        .container {
+            padding: 0 16px;
+        }
+
+        #display {
+            font-size: 26px;
+            font-weight: 800;
+            background: #fff;
+            padding: 18px 10px;
+            margin: 0 auto 15px;
+            border-radius: 12px;
+            border: none;
+            min-height: 32px;
+            letter-spacing: 2px;
+            max-width: 400px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.04);
+            color: #111;
+        }
+        .fixed-part { color: #009944; } /* ファミマグリーン */
+        
+        .controls { max-width: 400px; margin: 0 auto 20px; text-align: right; }
+        #toggleLayoutBtn {
+            padding: 8px 16px;
+            font-size: 13px;
+            font-weight: bold;
+            border: none;
+            border-radius: 20px;
+            background: #e4e9ed;
+            cursor: pointer;
+            color: #555;
+            box-shadow: 0 2px 0 #d1d8df;
+            letter-spacing: 0.5px;
+            transition: all 0.1s;
+        }
         #toggleLayoutBtn:active { transform: translateY(2px); box-shadow: none; }
+
+        .keypad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; max-width: 400px; margin: 0 auto; }
+        .key {
+            background: #fff;
+            border: none;
+            border-radius: 16px;
+            font-size: 32px;
+            font-weight: 700;
+            padding: 22px 0;
+            color: #333;
+            cursor: pointer;
+            box-shadow: 0 4px 0 #d1d8df, 0 8px 15px rgba(0,0,0,0.03);
+            user-select: none;
+            transition: all 0.1s ease;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .key:active { transform: translateY(4px); box-shadow: 0 0px 0 #d1d8df; background: #fafbfc; }
+        
+        .key.clear { background: #fff4f4; color: #ff3b30; font-size: 18px; box-shadow: 0 4px 0 #ffdbdb; }
+        .key.clear:active { box-shadow: 0 0px 0 #ffdbdb; }
+        
+        .key.back { background: #fff9f0; color: #ff9500; font-size: 18px; box-shadow: 0 4px 0 #ffe0b2; }
+        .key.back:active { box-shadow: 0 0px 0 #ffe0b2; }
+
+        #result-area { display: none; margin-top: 10px; }
+        .barcode-container {
+            background: #fff;
+            padding: 24px 16px;
+            border-radius: 16px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.06);
+            margin: 0 auto 24px;
+            max-width: 400px;
+        }
+        #barcodeCanvas {
+            max-width: 100%;
+            height: auto;
+        }
+        
+        .share-btn {
+            padding: 18px;
+            font-size: 18px;
+            font-weight: 800;
+            background: #009944; /* ファミマグリーン */
+            color: white;
+            border: none;
+            border-radius: 14px;
+            width: 100%;
+            max-width: 400px;
+            cursor: pointer;
+            margin-bottom: 16px;
+            box-shadow: 0 5px 0 #007a36, 0 10px 20px rgba(0,153,68,0.25);
+            transition: all 0.1s;
+        }
+        .share-btn:active { transform: translateY(5px); box-shadow: none; }
+        
+        .edit-btn {
+            padding: 18px;
+            font-size: 18px;
+            font-weight: 800;
+            background: #005EAD; /* ファミマブルー */
+            color: white;
+            border: none;
+            border-radius: 14px;
+            width: 100%;
+            max-width: 400px;
+            cursor: pointer;
+            box-shadow: 0 5px 0 #004b8a, 0 10px 20px rgba(0,94,173,0.25);
+            transition: all 0.1s;
+        }
+        .edit-btn:active { transform: translateY(5px); box-shadow: none; }
     </style>
 </head>
 <body>
 
-    <h1>ファミペイバーコードメーカー</h1>
-
-    <div id="display">8028-0000- (8/26)</div>
-    
-    <div class="controls" id="controls">
-        <button id="toggleLayoutBtn" onclick="toggleLayout()">📱 配列: 電話</button>
+    <div class="header">
+        <h1>ファミペイバーコードメーカー</h1>
     </div>
 
-    <div class="keypad" id="keypad">
-        <!-- JSで描画 -->
-    </div>
+    <div class="container">
+        <div id="display">8028-0000- (8/26)</div>
+        
+        <div class="controls" id="controls">
+            <button id="toggleLayoutBtn" onclick="toggleLayout()">📱 配列: 電話</button>
+        </div>
 
-    <div id="result-area">
-        <canvas id="barcodeCanvas"></canvas>
-        <button class="share-btn" onclick="shareImage()">画像にしてLINEなどで送る</button>
-        <button class="edit-btn" onclick="backToInput()">修正する（入力画面に戻る）</button>
+        <div class="keypad" id="keypad">
+            <!-- JSで描画 -->
+        </div>
+
+        <div id="result-area">
+            <div class="barcode-container">
+                <canvas id="barcodeCanvas"></canvas>
+            </div>
+            <button class="share-btn" onclick="shareImage()">画像にしてLINEなどで送る</button>
+            <button class="edit-btn" onclick="backToInput()">修正する（入力画面に戻る）</button>
+        </div>
     </div>
 
     <script>
@@ -86,9 +209,9 @@
             if (currentInput.length > 8) {
                 const fixedPart = formatted.substring(0, 9);
                 const inputPart = formatted.substring(9);
-                display.innerHTML = `<span class="fixed-part">${fixedPart}-</span>${inputPart} (${currentInput.length}/26)`;
+                display.innerHTML = `<span class="fixed-part">${fixedPart}-</span>${inputPart} <span style="font-size:16px; color:#999;">(${currentInput.length}/26)</span>`;
             } else {
-                display.innerHTML = `<span class="fixed-part">${formatted}-</span> (${currentInput.length}/26)`;
+                display.innerHTML = `<span class="fixed-part">${formatted}-</span> <span style="font-size:16px; color:#999;">(${currentInput.length}/26)</span>`;
             }
 
             // 26桁になったら自動でバーコード生成画面へ
@@ -142,7 +265,8 @@
                 height: 100,
                 displayValue: true,
                 margin: 10,
-                background: "#ffffff"
+                background: "#ffffff",
+                lineColor: "#111111"
             });
         }
 
